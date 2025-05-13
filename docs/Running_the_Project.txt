@@ -12,7 +12,7 @@ Prerequisites
 - OpenSSL: For generating certificates (included in most systems, or install from https://www.openssl.org/, verify with `openssl version`).
 - Browser: Firefox or Chrome for accessing the application.
 - Terminal: Command Prompt, PowerShell, or Bash for running commands.
-- GitHub Repository: Access to the project repository (e.g., https://github.com/username/chat-app, replace with the actual repository URL).
+- GitHub Repository: https://github.com/Aadarsh-Keshri/End-to-End_Encrypted_Chat_App
 
 Setup Instructions
 ------------------
@@ -23,9 +23,8 @@ Setup Instructions
      ```
    - Clone the repository:
      ```
-     git clone https://github.com/username/chat-app.git
+     git clone https://github.com/Aadarsh-Keshri/End-to-End_Encrypted_Chat_App.git
      ```
-     Replace `https://github.com/username/chat-app` with the actual repository URL.
    - Navigate to the project directory:
      ```
      cd chat-app
