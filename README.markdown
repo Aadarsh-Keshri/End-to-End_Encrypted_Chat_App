@@ -1,4 +1,4 @@
-# Secure Chat Application Using AES and ECDH
+# End-to-End Encrypted Real-Time Chat Application
 
 This is a secure, end-to-end encrypted chat application built using Node.js, WebSocket, and the Web Crypto API. It leverages **ECDH (P-256)** for key exchange, **AES-256-CBC** for message encryption, and **HMAC-SHA256** for message integrity and authenticity. The application allows multiple clients to connect, exchange public keys, and send encrypted messages that only the intended recipient can decrypt.
 
@@ -62,7 +62,7 @@ The application ensures **end-to-end encryption**, meaning the server only sees 
 ## Installation
 1. **Clone or Download the Repository**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Aadarsh-Keshri/End-to-End_Encrypted_Chat_App.git
    cd secure-chat
    ```
    Alternatively, download and extract the project ZIP file.
