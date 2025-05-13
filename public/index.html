@@ -3,16 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Secure Chat</title>
+  <title>BIT ka WhatsApp</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Secure Chat</h1>
-  <div>Your Client ID: <span id="clientId">Connecting...</span></div>
-  <div>Connected Clients: <select id="clients"><option value="">Select a client</option></select></div>
-  <div id="chat"></div>
-  <input type="text" id="message" placeholder="Type a message...">
-  <button id="send">Send</button>
+  <header>
+    <h1>BIT ka WhatsApp</h1>
+    <span id="clientId">Connecting...</span>
+  </header>
+  <main>
+    <div class="chat-area" id="chat"></div>
+  </main>
+  <footer class="input-area">
+    <select id="clients">
+      <option value="">Select a client</option>
+    </select>
+    <input type="text" id="message" placeholder="Type a message...">
+    <button id="send"></button>
+  </footer>
   <script src="/client.js"></script>
 </body>
 </html>

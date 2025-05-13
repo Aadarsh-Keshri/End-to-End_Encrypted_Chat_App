@@ -29,7 +29,8 @@
     console.log('Generated public key length:', new Uint8Array(publicKey).length, 'First few bytes:', new Uint8Array(publicKey).slice(0, 10));
   } catch (error) {
     console.error('Key generation failed:', error);
-    document.getElementById('chat').innerHTML += `<p><strong>Error:</strong> Failed to generate encryption keys: ${error.message}</p>`;
+    // Updated: Use .error class for styling
+    document.getElementById('chat').innerHTML += `<div class="error"><strong>Error:</strong> Failed to generate encryption keys: ${error.message}</div>`;
     return;
   }
 
@@ -116,14 +117,16 @@
           console.log('Shared secret key set for:', data.from);
         } catch (error) {
           console.error('Public key processing error:', error);
-          chat.innerHTML += `<p><strong>Error:</strong> Failed to process public key from ${data.from}: ${error.message}</p>`;
+          // Updated: Use .error class for styling
+          chat.innerHTML += `<div class="error"><strong>Error:</strong> Failed to process public key from ${data.from}: ${error.message}</div>`;
           chat.scrollTop = chat.scrollHeight;
         }
       } else if (data.type === 'encryptedMessage') {
         console.log('Processing encryptedMessage from:', data.from);
         const sharedSecretKey = sharedSecrets.get(data.from);
         if (!sharedSecretKey) {
-          chat.innerHTML += `<p><strong>Error:</strong> No shared secret with ${data.from}</p>`;
+          // Updated: Use .error class for styling
+          chat.innerHTML += `<div class="error"><strong>Error:</strong> No shared secret with ${data.from}</div>`;
           chat.scrollTop = chat.scrollHeight;
           return;
         }
@@ -139,7 +142,8 @@
           const hmacKey = await crypto.subtle.importKey('raw', rawSharedSecret, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
           const computedHmac = await crypto.subtle.sign('HMAC', hmacKey, ivAndCiphertext);
           if (!timingSafeEqual(receivedHmac, new Uint8Array(computedHmac))) {
-            chat.innerHTML += `<p><strong>Error:</strong> HMAC verification failed</p>`;
+            // Updated: Use .error class for styling
+            chat.innerHTML += `<div class="error"><strong>Error:</strong> HMAC verification failed</div>`;
             chat.scrollTop = chat.scrollHeight;
             return;
           }
@@ -147,46 +151,55 @@
           // Decrypt
           const decrypted = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, sharedSecretKey, ciphertext);
           const plaintext = new TextDecoder().decode(decrypted);
-          chat.innerHTML += `<p><strong>${data.from}:</strong> ${plaintext}</p>`;
+          // Updated: Use div with .message.received class and timestamp
+          const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          chat.innerHTML += `<div class="message received"><strong>${data.from}:</strong> ${plaintext}<span class="timestamp">${timestamp}</span></div>`;
           chat.scrollTop = chat.scrollHeight;
         } catch (error) {
           console.error('Encrypted message processing error:', error);
-          chat.innerHTML += `<p><strong>Error:</strong> Failed to process message from ${data.from}: ${error.message}</p>`;
+          // Updated: Use .error class for styling
+          chat.innerHTML += `<div class="error"><strong>Error:</strong> Failed to process message from ${data.from}: ${error.message}</div>`;
           chat.scrollTop = chat.scrollHeight;
         }
       } else if (data.type === 'error') {
-        chat.innerHTML += `<p><strong>Error from server:</strong> ${data.message} (Code: ${data.code})</p>`;
+        // Updated: Use .error class for styling
+        chat.innerHTML += `<div class="error"><strong>Error from server:</strong> ${data.message} (Code: ${data.code})</div>`;
         chat.scrollTop = chat.scrollHeight;
       }
     } catch (error) {
       console.error('Message processing error:', error);
-      chat.innerHTML += `<p><strong>Error:</strong> Failed to process server message: ${error.message}</p>`;
+      // Updated: Use .error class for styling
+      chat.innerHTML += `<div class="error"><strong>Error:</strong> Failed to process server message: ${error.message}</div>`;
       chat.scrollTop = chat.scrollHeight;
     }
   };
 
   ws.onclose = () => {
-    chat.innerHTML += '<p><strong>Disconnected from server</strong></p>';
+    // Updated: Use .error class for styling
+    chat.innerHTML += '<div class="error"><strong>Disconnected from server</strong></div>';
     chat.scrollTop = chat.scrollHeight;
   };
 
   ws.onerror = (error) => {
     console.error('WebSocket error:', error);
-    chat.innerHTML += `<p><strong>Error:</strong> WebSocket connection error</p>`;
+    // Updated: Use .error class for styling
+    chat.innerHTML += '<div class="error"><strong>Error:</strong> WebSocket connection error</div>';
     chat.scrollTop = chat.scrollHeight;
   };
 
   // Send message
   sendButton.onclick = async () => {
     if (!sharedSecrets.size) {
-      chat.innerHTML += `<p><strong>Wait:</strong> Key exchange in progress...</p>`;
+      // Updated: Use .error class for styling
+      chat.innerHTML += `<div class="error"><strong>Wait:</strong> Key exchange in progress...</div>`;
       chat.scrollTop = chat.scrollHeight;
       for (let i = 0; i < 10; i++) {
         if (sharedSecrets.size) break;
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
       if (!sharedSecrets.size) {
-        chat.innerHTML += `<p><strong>Error:</strong> Key exchange timed out</p>`;
+        // Updated: Use .error class for styling
+        chat.innerHTML += `<div class="error"><strong>Error:</strong> Key exchange timed out</div>`;
         chat.scrollTop = chat.scrollHeight;
         return;
       }
@@ -197,7 +210,8 @@
 
     const sharedSecretKey = sharedSecrets.get(recipient);
     if (!sharedSecretKey) {
-      chat.innerHTML += `<p><strong>Error:</strong> No shared secret with ${recipient}</p>`;
+      // Updated: Use .error class for styling
+      chat.innerHTML += `<div class="error"><strong>Error:</strong> No shared secret with ${recipient}</div>`;
       chat.scrollTop = chat.scrollHeight;
       return;
     }
@@ -223,13 +237,15 @@
         hmac: Array.from(new Uint8Array(hmac))
       }));
 
-      // Display sent message
-      chat.innerHTML += `<p><strong>You to ${recipient}:</strong> ${message}</p>`;
+      // Updated: Use div with .message.sent class and timestamp
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      chat.innerHTML += `<div class="message sent">${message}<span class="timestamp">${timestamp}</span></div>`;
       chat.scrollTop = chat.scrollHeight;
       messageInput.value = '';
     } catch (error) {
       console.error('Message sending error:', error);
-      chat.innerHTML += `<p><strong>Error:</strong> Failed to send message: ${error.message}</p>`;
+      // Updated: Use .error class for styling
+      chat.innerHTML += `<div class="error"><strong>Error:</strong> Failed to send message: ${error.message}</div>`;
       chat.scrollTop = chat.scrollHeight;
     }
   };
@@ -239,4 +255,3 @@
     if (e.key === 'Enter') sendButton.click();
   });
 })();
-//By Aadarsh Keshri
