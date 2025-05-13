@@ -1,6 +1,6 @@
 # End-to-End Encrypted Real-Time Chat Application
 
-This is a secure, end-to-end encrypted chat application built using Node.js, WebSocket, and the Web Crypto API. It leverages **ECDH (P-256)** for key exchange, **AES-256-CBC** for message encryption, and **HMAC-SHA256** for message integrity and authenticity. The application allows multiple clients to connect, exchange public keys, and send encrypted messages that only the intended recipient can decrypt.
+This is a secure, end-to-end encrypted real-time chat application built using Node.js, WebSocket, and the Web Crypto API. It leverages **ECDH (P-256)** for key exchange, **AES-256-CBC** for message encryption, and **HMAC-SHA256** for message integrity and authenticity. The application allows multiple clients to connect, exchange public keys, and send encrypted messages that only the intended recipient can decrypt.
 
 ## Table of Contents
 - [Features](#features)
