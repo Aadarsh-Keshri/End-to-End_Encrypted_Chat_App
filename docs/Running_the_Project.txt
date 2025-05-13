@@ -1,0 +1,98 @@
+End-to-End Encrypted Real-Time Chat Application - Running the Project
+===================================================================
+
+Overview
+--------
+This guide explains how to set up and run the End-to-End Encrypted Real-Time Chat Application, a secure chat platform with end-to-end encryption using ECDH (P-256), AES-256-CBC, and HMAC-SHA256, and a WhatsApp-inspired UI. It runs locally on Node.js with a self-signed TLS certificate for HTTPS/WSS.
+
+Prerequisites
+-------------
+- Git: Install from https://git-scm.com/ (verify with `git --version`).
+- Node.js (v16+): Download from https://nodejs.org/ (verify with `node -v`).
+- OpenSSL: For generating certificates (included in most systems, or install from https://www.openssl.org/, verify with `openssl version`).
+- Browser: Firefox or Chrome for accessing the application.
+- Terminal: Command Prompt, PowerShell, or Bash for running commands.
+- GitHub Repository: Access to the project repository (e.g., https://github.com/username/chat-app, replace with the actual repository URL).
+
+Setup Instructions
+------------------
+1. Clone the GitHub Repository
+   - Open a terminal and navigate to your desired project directory (e.g., D:\CNS_Assignment):
+     ```
+     cd D:\CNS_Assignment
+     ```
+   - Clone the repository:
+     ```
+     git clone https://github.com/username/chat-app.git
+     ```
+     Replace `https://github.com/username/chat-app` with the actual repository URL.
+   - Navigate to the project directory:
+     ```
+     cd chat-app
+     ```
+
+2. Verify Project Structure
+   - Confirm the cloned repository contains the following files and folders in `D:\CNS_Assignment\chat-app`:
+     ```
+     chat-app/
+     ├── public/
+     │   ├── index.html
+     │   ├── style.css
+     │   ├── client.js
+     ├── server/
+     │   ├── websocket.js
+     │   ├── messages.js
+     │   ├── clients.js
+     │   ├── errors.js
+     ├── server.js
+     ├── cert.pem
+     ├── key.pem
+     ├── package.json
+     ```
+   - If `cert.pem` or `key.pem` are missing, proceed to step 3 to generate them.
+
+3. Generate Self-Signed Certificates (if not included)
+   - In the project directory (`D:\CNS_Assignment\chat-app`):
+     ```
+     openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+     ```
+   - This creates `cert.pem` and `key.pem` in the project root, required for HTTPS/WSS.
+
+4. Install Dependencies
+   - In the project directory:
+     ```
+     npm install
+     ```
+   - This installs required Node.js packages (`express`, `ws`, `uuid`) specified in `package.json`:
+     ```
+     {
+       "dependencies": {
+         "express": "^4.18.2",
+         "ws": "^8.14.2",
+         "uuid": "^9.0.1"
+       }
+     }
+     ```
+   - Verify installation by checking `node_modules/` exists in the project directory.
+
+Running the Application
+----------------------
+1. Start the Server
+   - In the project directory (`D:\CNS_Assignment\chat-app`):
+     ```
+     node server.js
+     ```
+   - The server runs on https://localhost:3000 for the web interface and wss://localhost:3000 for WebSocket connections.
+   - If the server fails to start (e.g., port 3000 in use), check server logs in the terminal for errors and ensure port 3000 is free.
+
+2. Access the Application
+   - Open Firefox or Chrome and navigate to https://localhost:3000.
+   - Accept the self-signed certificate warning:
+     - Firefox: Click "Advanced" > "Accept the Risk and Continue".
+     - Chrome: Click "Advanced" > "Proceed to localhost (unsafe)".
+   - The application loads, displaying the chat interface with a teal header, client ID, and input area.
+
+3. Connect Multiple Clients
+   - Open additional browser tabs or windows at https://localhost:3000.
+   - Each tab displays a unique Client ID (e.g., 30efc335-1c2e-4ed7-96bc-c2bc5237caa8).
+   - Use the dropdown to select recipients and send encrypted messages.

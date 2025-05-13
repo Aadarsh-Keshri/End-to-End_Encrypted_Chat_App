@@ -1,0 +1,93 @@
+End-to-End Encrypted Real-Time Chat Application - Cryptography Documentation
+=========================================================================
+
+Overview
+--------
+The End-to-End Encrypted Real-Time Chat Application ensures secure messaging using ECDH (P-256), AES-256-CBC, and HMAC-SHA256, implemented in client.js with Web Crypto API. These algorithms provide confidentiality, integrity, and authenticity. The server (server.js, server/websocket.js, server/messages.js, server/clients.js, server/errors.js) relays encrypted data without access to plaintext.
+
+Cryptographic Algorithms
+-----------------------
+1. ECDH (Elliptic Curve Diffie-Hellman, P-256)
+   - Purpose: Establishes shared secret for encryption/HMAC keys.
+   - How It Works:
+     - Generates public/private key pair on P-256 curve.
+     - Clients exchange public keys via server.
+     - Derives 256-bit shared secret using private key and peer’s public key.
+     - Shared secret derives AES key.
+   - Security:
+     - Forward secrecy: Compromised keys don’t affect past sessions.
+     - No server access to secrets.
+   - Vulnerabilities:
+     - No public key authentication, risking MITM if TLS fails.
+
+2. AES-256-CBC (Advanced Encryption Standard, 256-bit, Cipher Block Chaining)
+   - Purpose: Encrypts messages for confidentiality.
+   - How It Works:
+     - Uses 256-bit key (from ECDH), 128-bit random IV.
+     - Encrypts plaintext in 128-bit blocks, chaining with previous ciphertext.
+     - Pads plaintext (PKCS#7).
+     - Produces ciphertext decryptable only by recipient.
+   - Security:
+     - Strong confidentiality.
+     - Unique IV prevents reuse attacks.
+   - Vulnerabilities:
+     - CBC requires careful IV management (handled by crypto.getRandomValues).
+     - No integrity (addressed by HMAC).
+
+3. HMAC-SHA256 (Hash-based Message Authentication Code with SHA-256)
+   - Purpose: Ensures message integrity/authenticity.
+   - How It Works:
+     - Uses shared secret as HMAC key.
+     - Hashes IV + ciphertext with SHA-256.
+     - Sent with message, verified by recipient.
+     - Timing-safe comparison prevents side-channel attacks.
+   - Security:
+     - Verifies integrity/authenticity.
+   - Vulnerabilities:
+     - Relies on secure shared secret.
+
+Implementation in client.js
+--------------------------
+1. ECDH (P-256)
+   - Key Pair (~line 16):
+     - crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey', 'deriveBits'])
+     - Exports publicKey as raw bytes.
+   - Public Key Exchange (~line 45):
+     - Sends publicKey (type: 'publicKey').
+     - Receives peer’s publicKey (~line 65):
+       crypto.subtle.importKey('raw', peerPublicKey, { name: 'ECDH', namedCurve: 'P-256' }, false, [])
+   - Shared Secret (~line 75):
+     - Primary: deriveKey({ name: 'ECDH', public: peerKey }, privateKey, { name: 'AES-CBC', length: 256 }, true, ['encrypt', 'decrypt'])
+     - Fallback: deriveBits, import as AES key.
+     - Stores in sharedSecrets Map (key: peer UUID, value: AES key).
+
+2. AES-256-CBC
+   - Encryption (~line 147):
+     - Generates IV: crypto.getRandomValues(new Uint8Array(16)).
+     - Encodes: new TextEncoder().encode(message).
+     - Encrypts: crypto.subtle.encrypt({ name: 'AES-CBC', iv }, sharedSecretKey, encodedMessage).
+     - Sends iv, ciphertext (type: 'encryptedMessage').
+   - Decryption (~line 108):
+     - Receives iv, ciphertext.
+     - Decrypts: crypto.subtle.decrypt({ name: 'AES-CBC', iv }, sharedSecretKey, ciphertext).
+     - Decodes: new TextDecoder().decode(decrypted).
+
+3. HMAC-SHA256
+   - Generation (~line 147):
+     - Exports shared secret: crypto.subtle.exportKey('raw', sharedSecretKey).
+     - Imports HMAC key: crypto.subtle.importKey('raw', rawSharedSecret, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']).
+     - Signs IV + ciphertext: crypto.subtle.sign('HMAC', hmacKey, ivAndCiphertext).
+     - Sends hmac.
+   - Verification (~line 108):
+     - Imports HMAC key: crypto.subtle.importKey('raw', rawSharedSecret, { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']).
+     - Computes HMAC: crypto.subtle.sign('HMAC', hmacKey, ivAndCiphertext).
+     - Compares with timingSafeEqual.
+
+Security Considerations
+----------------------
+- TLS (self-signed): Secures WebSocket, risks MITM.
+- No Key Authentication: ECDH keys lack signatures.
+- Recommendations:
+  - Use trusted CA certificates.
+  - Add ECDSA signatures for keys.
+  - Implement user authentication.

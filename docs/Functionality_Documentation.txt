@@ -1,0 +1,121 @@
+End-to-End Encrypted Real-Time Chat Application - Functionality Documentation
+==========================================================================
+
+Overview
+--------
+The End-to-End Encrypted Real-Time Chat Application is a secure, browser-based chat platform for real-time messaging with a WhatsApp-inspired UI. It ensures message confidentiality, integrity, and authenticity using end-to-end encryption via ECDH (P-256), AES-256-CBC, and HMAC-SHA256. WebSocket enables instant communication, and clients are identified by UUIDs. The UI features a teal header, light gray chat background, green sent bubbles, white received bubbles, and timestamps. Detailed cryptographic implementation is in Cryptography_Documentation.txt.
+
+Key Functionalities
+------------------
+1. End-to-End Encrypted Messaging
+   - Messages are encrypted client-side using:
+     - ECDH (P-256): Establishes shared secrets for key derivation.
+     - AES-256-CBC: Encrypts messages for confidentiality.
+     - HMAC-SHA256: Ensures message integrity and authenticity.
+   - The server relays encrypted data (iv, ciphertext, hmac) without access to plaintext.
+   - Clients exchange public keys via WebSocket for secure key agreement.
+
+2. Real-Time Communication
+   - WebSocket (wss://localhost:3000) delivers messages instantly.
+   - Messages appear in a scrollable chat area with auto-scrolling to the latest message.
+
+3. User Interface
+   - Header: Teal background with "End-to-End Encrypted Real-Time Chat Application" title and client UUID.
+   - Chat Area: Light gray background, green sent bubbles (right, "To <RecipientID>"), white received bubbles (left, "<SenderID>").
+   - Input Area: Fixed bottom bar with recipient dropdown, rounded text input, teal send button (paper plane icon).
+   - Responsive design for mobile (max-width 600px).
+   - Errors (e.g., connection failure) in red, centered text.
+
+4. Client Management
+   - Server assigns UUIDs (e.g., 30efc335-1c2e-4ed7-96bc-c2bc5237caa8).
+   - Dropdown lists connected clients (excluding self) for recipient selection.
+
+Code Structure
+--------------
+The project includes client-side and server-side components:
+
+1. Client-Side (public/)
+   - index.html
+     - UI structure: <header> (title, client ID), <main> (chat area), <footer> (input area with dropdown, input, send button).
+     - Loads style.css, client.js.
+   - style.css
+     - WhatsApp-inspired UI:
+       - Header: #075E54 (teal).
+       - Chat Area: #ECE5DD (light gray), .message.sent (#DCF8C6, green), .message.received (#FFFFFF, white).
+       - Input Area: #F0F0F0, rounded #message input, #send button with paper plane.
+       - Responsive media query (max-width: 600px).
+       - Timestamps (.timestamp), errors (.error) styled.
+   - client.js
+     - WebSocket: Connects to wss://localhost:3000, handles clientId, clientList, publicKey, encryptedMessage, error, success.
+     - Cryptography: Implements ECDH key exchange, AES-256-CBC encryption, HMAC-SHA256 verification (see Cryptography_Documentation.txt).
+     - DOM: Shows client ID (#clientId), populates dropdown (#clients), appends messages to #chat (<div class="message sent/received"> with timestamps), shows errors (<div class="error">).
+     - Events: Send button (#send) and Enter key send messages.
+
+2. Server-Side
+   - server.js (root)
+     - Node.js server with https (cert.pem, key.pem) and express.
+     - Serves public/ files on https://localhost:3000.
+     - Creates WebSocketServer (ws) and calls websocket.js::initializeWebSocket.
+   - server/websocket.js
+     - Initializes WebSocket handlers:
+       - On connection: Assigns UUID (uuid.v4()), sends clientId, broadcasts clientList.
+       - On message: Parses JSON, delegates to messages.js::processMessage.
+       - On close: Updates/broadcasts clientList, clears public key via messages.js::clearPublicKey.
+       - Logs success/error with timestamp, client ID.
+   - server/messages.js
+     - Processes messages:
+       - publicKey: Stores key in publicKeys Map, broadcasts to others, sends existing keys to new client.
+       - encryptedMessage: Forwards iv, ciphertext, hmac to recipient’s WebSocket.
+       - Calls errors.js::handleSuccess for success, errors.js::handleError for failures (e.g., unknown recipient).
+   - server/clients.js
+     - Manages clients in a Map (UUID to WebSocket):
+       - addClient: Adds client, validates ID/WebSocket.
+       - removeClient: Removes client, checks existence.
+       - getClient: Retrieves WebSocket by UUID.
+       - getClientList: Returns UUID array.
+       - Throws errors.js::ClientError for invalid inputs.
+   - server/errors.js
+     - Defines error classes: ChatError, WebSocketError, MessageError, ClientError (with code, message, details).
+     - SuccessResponse for success messages.
+     - handleError: Logs error, sends { type: 'error', code, message } to client.
+     - handleSuccess: Logs success, sends { type: 'success', message, details } (except for 'Client connected').
+
+Program Logic
+-------------
+1. Client Initialization
+   - Connects to WebSocket, receives UUID (clientId) (~client.js:45).
+   - Generates ECDH key pair, sends publicKey (~client.js:16,45).
+   - Populates dropdown with clientList (~client.js:65).
+
+2. Sending a Message
+   - User selects recipient (#clients), types message (#message), clicks send (#send) or presses Enter (~client.js:147).
+   - Encrypts message:
+     - Derives AES key from ECDH shared secret (~client.js:75).
+     - Encrypts with AES-256-CBC, generates IV (~client.js:147).
+     - Computes HMAC-SHA256 over IV + ciphertext (~client.js:147).
+   - Sends encrypted message (iv, ciphertext, hmac) via WebSocket (~client.js:147).
+   - Displays: <div class="message sent"><strong>To <RecipientID>:</strong> <message><span class="timestamp">HH:MM</span></div>.
+
+3. Receiving a Message
+   - Receives encrypted message (iv, ciphertext, hmac), processes it:
+     - Verifies HMAC-SHA256 (~client.js:108).
+     - Decrypts with AES-256-CBC using shared secret (~client.js:108).
+   - Displays: <div class="message received"><strong><SenderID>:</strong> <plaintext><span class="timestamp">HH:MM</span></div>.
+
+4. Server Operation
+   - server.js starts HTTPS/WebSocket server, serves public/, calls websocket.js (~server.js:12).
+   - websocket.js assigns UUID, sends clientId, broadcasts clientList (~websocket.js:14).
+   - clients.js tracks clients (addClient, removeClient, getClientList) (~clients.js:5-26).
+   - messages.js handles publicKey (stores/broadcasts) and encryptedMessage (forwards via getClient) (~messages.js:9-45).
+   - errors.js logs/sends errors (e.g., invalid recipient) or success (e.g., message relayed) (~errors.js:54-82).
+
+5. Error Handling
+   - Client shows errors in red (<div class="error">) (e.g., HMAC failure, no shared secret) (~client.js:27,108).
+   - Server sends errors via errors.js::handleError (e.g., MESSAGE_ERROR for unknown type) (~messages.js:47).
+
+Limitations
+-----------
+- Self-signed certificates risk MITM attacks.
+- No client authentication allows unauthorized joins.
+- Temporary UUIDs lack persistent identity.
+- Messages not stored, lost on refresh.
