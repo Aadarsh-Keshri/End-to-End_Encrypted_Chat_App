@@ -18,21 +18,21 @@ Setup Instructions
 ------------------
 1. Clone the GitHub Repository
    - Open a terminal and navigate to your desired project directory (e.g., D:\CNS_Assignment):
-     ```
+     
      cd D:\CNS_Assignment
-     ```
+
    - Clone the repository:
-     ```
+     
      git clone https://github.com/Aadarsh-Keshri/End-to-End_Encrypted_Chat_App.git
-     ```
+     
    - Navigate to the project directory:
-     ```
+     
      cd chat-app
-     ```
+     
 
 2. Verify Project Structure
    - Confirm the cloned repository contains the following files and folders in `D:\CNS_Assignment\chat-app`:
-     ```
+     ``````````````````
      chat-app/
      ├── public/
      │   ├── index.html
@@ -47,23 +47,22 @@ Setup Instructions
      ├── cert.pem
      ├── key.pem
      ├── package.json
-     ```
-   - If `cert.pem` or `key.pem` are missing, proceed to step 3 to generate them.
+     ``````````````````
 
 3. Generate Self-Signed Certificates (if not included)
    - In the project directory (`D:\CNS_Assignment\chat-app`):
-     ```
+     
      openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
-     ```
+     
    - This creates `cert.pem` and `key.pem` in the project root, required for HTTPS/WSS.
 
 4. Install Dependencies
    - In the project directory:
-     ```
+     
      npm install
-     ```
+     
    - This installs required Node.js packages (`express`, `ws`, `uuid`) specified in `package.json`:
-     ```
+     
      {
        "dependencies": {
          "express": "^4.18.2",
@@ -71,16 +70,16 @@ Setup Instructions
          "uuid": "^9.0.1"
        }
      }
-     ```
+     
    - Verify installation by checking `node_modules/` exists in the project directory.
 
 Running the Application
 ----------------------
 1. Start the Server
    - In the project directory (`D:\CNS_Assignment\chat-app`):
-     ```
+     
      node server.js
-     ```
+     
    - The server runs on https://localhost:3000 for the web interface and wss://localhost:3000 for WebSocket connections.
    - If the server fails to start (e.g., port 3000 in use), check server logs in the terminal for errors and ensure port 3000 is free.
 
