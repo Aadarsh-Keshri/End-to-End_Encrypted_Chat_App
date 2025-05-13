@@ -1,0 +1,16 @@
+{
+  "name": "chat_app",
+  "version": "1.0.0",
+  "description": "An end-to-end encrypted chatting application",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "1BI22IC002",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.2"
+  }
+}
