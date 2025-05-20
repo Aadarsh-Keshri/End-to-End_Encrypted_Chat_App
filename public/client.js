@@ -241,3 +241,4 @@
     if (e.key === 'Enter') sendButton.click();
   });
 })();
+// by Aadarsh Keshri
