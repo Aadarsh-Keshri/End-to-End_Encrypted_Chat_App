@@ -1,27 +1,23 @@
+const express = require('express');
 const https = require('https');
 const fs = require('fs');
-const express = require('express');
-const { WebSocketServer } = require('ws');
-const { initializeWebSocket } = require('./server/websocket');
+const { Server } = require('ws');
+const { handleWebSocketConnection } = require('./server/websocket');
 
 const app = express();
+const serverOptions = {
+  cert: fs.readFileSync('cert.pem'),
+  key: fs.readFileSync('key.pem')
+};
 
 app.use(express.static('public'));
 
-const server = https.createServer({
-  cert: fs.readFileSync('cert.pem'),
-  key: fs.readFileSync('key.pem')
-}, app);
+const server = https.createServer(serverOptions, app);
+const wss = new Server({ server });
 
-const wss = new WebSocketServer({ server });
+wss.on('connection', handleWebSocketConnection);
 
-try {
-  initializeWebSocket(wss);
-} catch (error) {
-  console.error(`[${new Date().toISOString()}] WebSocketError (WEBSOCKET_ERROR): Error initializing WebSocket handlers | Client: unknown | Details:`, { error: error.message });
-  process.exit(1);
-}
-
-server.listen(3000, () => {
-  console.log('Server running on https://localhost:3000');
+// Bind to all interfaces (0.0.0.0) instead of localhost
+server.listen(3000, '0.0.0.0', () => {
+  console.log('Server running on https://0.0.0.0:3000');
 });

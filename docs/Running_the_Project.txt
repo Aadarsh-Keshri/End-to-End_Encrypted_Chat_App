@@ -3,37 +3,38 @@ End-to-End Encrypted Real-Time Chat Application - Running the Project
 
 Overview
 --------
-This guide explains how to set up and run the End-to-End Encrypted Real-Time Chat Application, a secure chat platform with end-to-end encryption using ECDH (P-256), AES-256-CBC, and HMAC-SHA256, and a WhatsApp-inspired UI. It runs locally on Node.js with a self-signed TLS certificate for HTTPS/WSS.
+This guide provides instructions to set up and run the End-to-End Encrypted Real-Time Chat Application, a secure chat platform featuring end-to-end encryption with ECDH (P-256), AES-256-CBC, and HMAC-SHA256, and a WhatsApp-inspired UI. Built with Node.js, it uses HTTPS/WSS with self-signed TLS certificates and supports local testing (https://localhost:3000) and multi-host communication (e.g., https://192.168.1.100:3000) across devices on the same network. The application includes a robust error-handling framework, efficient public key management, and client management for seamless real-time messaging.
 
 Prerequisites
 -------------
 - Git: Install from https://git-scm.com/ (verify with `git --version`).
-- Node.js (v16+): Download from https://nodejs.org/ (verify with `node -v`).
+- Node.js (v16+): Download from https://nodejs.org/ (verify with `node -v`; tested with v22.15.1).
 - OpenSSL: For generating certificates (included in most systems, or install from https://www.openssl.org/, verify with `openssl version`).
 - Browser: Firefox or Chrome for accessing the application.
 - Terminal: Command Prompt, PowerShell, or Bash for running commands.
 - GitHub Repository: https://github.com/Aadarsh-Keshri/End-to-End_Encrypted_Chat_App
+- Network Access: For multi-host setup, ensure devices are on the same Wi-Fi network or configure internet access (e.g., port forwarding, ngrok).
 
 Setup Instructions
 ------------------
 1. Clone the GitHub Repository
-   - Open a terminal and navigate to your desired project directory (e.g., D:\CNS_Assignment):
-     
+   - Open a terminal and navigate to your project directory (e.g., D:\CNS_Assignment):
+     ```
      cd D:\CNS_Assignment
-
+     ```
    - Clone the repository:
-     
+     ```
      git clone https://github.com/Aadarsh-Keshri/End-to-End_Encrypted_Chat_App.git
-     
+     ```
    - Navigate to the project directory:
-     
-     cd chat-app
-     
+     ```
+     cd End-to-End_Encrypted_Chat_App
+     ```
 
 2. Verify Project Structure
-   - Confirm the cloned repository contains the following files and folders in `D:\CNS_Assignment\chat-app`:
-     ``````````````````
-     chat-app/
+   - Ensure the following files and folders exist in `D:\CNS_Assignment\chat-app`:
+     ```
+     End-to-End_Encrypted_Chat_App/
      ├── public/
      │   ├── index.html
      │   ├── style.css
@@ -43,26 +44,37 @@ Setup Instructions
      │   ├── messages.js
      │   ├── clients.js
      │   ├── errors.js
+     ├── docs/
+     │   ├── Functionality_Documentation.txt
+     │   ├── Cryptography_Documentation.txt
+     │   ├── Running_the_Project.txt
+     │   ├── Testing_the_Project.txt
      ├── server.js
      ├── cert.pem
      ├── key.pem
      ├── package.json
-     ``````````````````
+     ```
 
-3. Generate Self-Signed Certificates (if not included)
-   - In the project directory (`D:\CNS_Assignment\chat-app`):
-     
+3. Generate Self-Signed Certificates
+   - In `D:\CNS_Assignment\End-to-End_Encrypted_Chat_App`, generate certificates for local testing:
+     ```
      openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
-     
+     ```
+   - For multi-host access (e.g., devices on the same network), use the server’s IP (e.g., 192.168.1.100):
+     ```
+     openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=192.168.1.100"
+     ```
+   - Replace `192.168.1.100` with your server’s IP (find it with `ipconfig` on Windows or `ifconfig | grep inet` on Linux/macOS).
    - This creates `cert.pem` and `key.pem` in the project root, required for HTTPS/WSS.
+   - For internet access, consider Let’s Encrypt certificates or ngrok (see Running the Application, step 3).
 
 4. Install Dependencies
-   - In the project directory:
-     
+   - In `D:\CNS_Assignment\End-to-End_Encrypted_Chat_App`:
+     ```
      npm install
-     
-   - This installs required Node.js packages (`express`, `ws`, `uuid`) specified in `package.json`:
-     
+     ```
+   - This installs Node.js packages (`express`, `ws`, `uuid`) specified in `package.json`:
+     ```
      {
        "dependencies": {
          "express": "^4.18.2",
@@ -70,27 +82,73 @@ Setup Instructions
          "uuid": "^9.0.1"
        }
      }
-     
-   - Verify installation by checking `node_modules/` exists in the project directory.
+     ```
+   - Verify `node_modules/` exists in the project directory.
 
 Running the Application
 ----------------------
 1. Start the Server
-   - In the project directory (`D:\CNS_Assignment\chat-app`):
-     
+   - In `D:\CNS_Assignment\End-to-End_Encrypted_Chat_App`:
+     ```
      node server.js
-     
-   - The server runs on https://localhost:3000 for the web interface and wss://localhost:3000 for WebSocket connections.
-   - If the server fails to start (e.g., port 3000 in use), check server logs in the terminal for errors and ensure port 3000 is free.
+     ```
+   - The server runs on https://0.0.0.0:3000, accessible via:
+     - Local: https://localhost:3000
+     - Multi-host: https://192.168.1.100:3000 (replace with your server’s IP)
+   - WebSocket connections use wss://localhost:3000 or wss://192.168.1.100:3000.
+   - If the server fails to start (e.g., port 3000 in use), check for conflicts:
+     ```
+     netstat -a -n -o | find "3000"
+     ```
+     Terminate conflicting processes or modify `server.js` (line ~20) to use another port (e.g., 3001), updating `public/client.js` (line ~4) accordingly.
 
-2. Access the Application
-   - Open Firefox or Chrome and navigate to https://localhost:3000.
-   - Accept the self-signed certificate warning:
+2. Configure Network (for Multi-host Access)
+   - Allow incoming connections on port 3000:
+     - Windows:
+       ```
+       netsh advfirewall firewall add rule name="Node 3000" dir=in action=allow protocol=TCP localport=3000
+       ```
+     - Linux/macOS:
+       ```
+       sudo ufw allow 3000/tcp
+       ```
+   - Find the server’s IP:
+     - Windows:
+       ```
+       ipconfig
+       ```
+       Look for `IPv4 Address` (e.g., 192.168.1.100).
+     - Linux/macOS:
+       ```
+       ifconfig | grep inet
+       ```
+   - For internet access, set up port forwarding on your router for port 3000 to the server’s IP, or use ngrok:
+     ```
+     ngrok http 3000
+     ```
+     Update `public/client.js` (line ~4) with the ngrok URL (e.g., `wss://abcd1234.ngrok.io`).
+
+3. Access the Application
+   - Local testing: Open Firefox or Chrome and navigate to https://localhost:3000.
+   - Multi-host testing: Use https://192.168.1.100:3000 (replace with your server’s IP or ngrok URL).
+   - Accept self-signed certificate warnings:
      - Firefox: Click "Advanced" > "Accept the Risk and Continue".
-     - Chrome: Click "Advanced" > "Proceed to localhost (unsafe)".
-   - The application loads, displaying the chat interface with a teal header, client ID, and input area.
+     - Chrome: Click "Advanced" > "Proceed to localhost (unsafe)" or "Proceed to 192.168.1.100 (unsafe)".
+   - With valid certificates (e.g., Let’s Encrypt), no warnings appear.
+   - The chat interface loads, showing a teal header, client ID, and message input area.
 
-3. Connect Multiple Clients
-   - Open additional browser tabs or windows at https://localhost:3000.
-   - Each tab displays a unique Client ID (e.g., 30efc335-1c2e-4ed7-96bc-c2bc5237caa8).
+4. Test Multiple Clients
+   - Local: Open multiple browser tabs/windows at https://localhost:3000.
+   - Multi-host: Open the application on different devices (e.g., laptops, phones) at https://192.168.1.100:3000.
+   - Each client displays a unique Client ID (e.g., 30efc335-1c2e-4ed7-96bc-c2bc5237caa8).
    - Use the dropdown to select recipients and send encrypted messages.
+   - Verify encryption and decryption using browser DevTools (Network > WS) or server logs.
+
+Troubleshooting
+---------------
+- Server Fails to Start: Check terminal logs. Ensure port 3000 is free and module exports are correct (see Setup Instructions, step 2).
+- Connection Issues: Verify devices are on the same network (`ping 192.168.1.100`) and port 3000 is open. Use ngrok for external access.
+- Certificate Errors: Regenerate certificates with the correct CN (localhost or server IP). Ensure `public/client.js` uses the matching WebSocket URL.
+- Message Failures: Check browser DevTools (Console, Network > WS) for client errors or server logs for `MessageError`/`ClientError`.
+- Logs: Server logs are in the terminal (`server/errors.js`). Client logs are in the browser console.
+- Documentation: Refer to `docs/Functionality_Documentation.txt`, `docs/Cryptography_Documentation.txt`, and `docs/Testing_the_Project.txt` for details on features, encryption, and testing.

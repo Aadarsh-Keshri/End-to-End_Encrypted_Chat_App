@@ -1,65 +1,65 @@
 const { v4: uuidv4 } = require('uuid');
-const { WebSocket } = require('ws');
-const messages = require('./messages');
-const { SuccessResponse } = require('./errors');
+const { addClient, removeClient, getClientList } = require('./clients');
+const { storePublicKey, sendEncryptedMessage, clearPublicKey } = require('./messages');
+const { handleError, handleSuccess, MessageError, SuccessResponse } = require('./errors');
 
-function initializeWebSocket(wss) {
-  const handleSuccess = (response) => {
-    console.log(`[${new Date().toISOString()}] SUCCESS: ${response.message} | Client: ${response.details.clientId || 'unknown'} | Details:`, response.details);
-  };
+function handleWebSocketConnection(ws) {
+  // Assign client ID
+  const clientId = uuidv4();
+  addClient(clientId, ws);
 
-  const handleError = (code, message, ws) => {
-    console.error(`[${new Date().toISOString()}] ERROR: ${message} | Client: ${ws.id || 'unknown'}`);
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'error', code, message }));
+  // Send client ID to client
+  ws.send(JSON.stringify({ type: 'clientId', id: clientId }));
+
+  // Broadcast client list
+  const clientList = getClientList();
+  clientList.forEach(client => {
+    if (client && client.ws && client.ws.readyState === 1) { // WebSocket.OPEN
+      client.ws.send(JSON.stringify({ type: 'clientList', clients: clientList.map(c => c.id) }));
     }
-  };
+  });
 
-  wss.on('connection', (ws) => {
-    ws.id = uuidv4();
-    handleSuccess(new SuccessResponse('Client connected', { clientId: ws.id }));
-    ws.send(JSON.stringify({ type: 'clientId', id: ws.id }));
-    const clientList = Array.from(wss.clients).map(client => client.id);
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'clientList', clients: clientList }));
+  // Handle messages
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      if (data.type === 'publicKey') {
+        if (Array.isArray(data.publicKey)) {
+          storePublicKey(clientId, data.publicKey);
+          handleSuccess(new SuccessResponse('Public key stored', { clientId }), ws, clientId);
+        } else {
+          throw new MessageError('Invalid public key format', { clientId });
+        }
+      } else if (data.type === 'encryptedMessage') {
+        sendEncryptedMessage(clientId, data.to, {
+          iv: data.iv,
+          ciphertext: data.ciphertext,
+          hmac: data.hmac
+        });
+        handleSuccess(new SuccessResponse('Encrypted message sent', { clientId, to: data.to }), ws, clientId);
+      } else {
+        throw new MessageError(`Unknown message type: ${data.type}`, { clientId });
+      }
+    } catch (error) {
+      handleError(error instanceof MessageError ? error : new MessageError('Invalid message', { clientId, error: error.message }), ws, clientId);
+    }
+  });
+
+  // Handle disconnection
+  ws.on('close', () => {
+    clearPublicKey(clientId);
+    removeClient(clientId);
+    const updatedClientList = getClientList();
+    updatedClientList.forEach(client => {
+      if (client && client.ws && client.ws.readyState === 1) {
+        client.ws.send(JSON.stringify({ type: 'clientList', clients: updatedClientList.map(c => c.id) }));
       }
     });
+  });
 
-    ws.on('message', async (data) => {
-      try {
-        console.log('Received message from:', ws.id, 'Data:', data);
-        const parsedData = JSON.parse(data);
-        if (!parsedData.type) {
-          handleError(400, 'Message type is required', ws);
-          return;
-        }
-        await messages.processMessage(wss, ws, ws.id, parsedData, handleSuccess, (code, message) => handleError(code, message, ws));
-      } catch (error) {
-        console.error(`[${new Date().toISOString()}] ERROR: Message processing failed | Client: ${ws.id} | Details:`, error);
-        handleError(400, error.message, ws);
-      }
-    });
-
-    ws.on('close', () => {
-      const clientList = Array.from(wss.clients)
-        .filter(client => client !== ws)
-        .map(client => client.id);
-      wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'clientList', clients: clientList }));
-        }
-      });
-      handleSuccess(new SuccessResponse('Client disconnected', { clientId: ws.id }));
-      // Clean up public keys
-      messages.clearPublicKey(ws.id);
-    });
+  ws.on('error', (error) => {
+    handleError(new MessageError('WebSocket error', { clientId, error: error.message }), ws, clientId);
   });
 }
 
-module.exports = {
-  initializeWebSocket,
-  clearPublicKey: (clientId) => {
-    messages.clearPublicKey(clientId);
-  }
-};
+module.exports = { handleWebSocketConnection };

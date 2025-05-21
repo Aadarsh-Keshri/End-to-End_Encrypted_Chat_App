@@ -1,6 +1,6 @@
 (async () => {
   // Initialize WebSocket
-  const ws = new WebSocket('wss://localhost:3000');
+  const ws = new WebSocket('wss://10.10.11.113:3000');
   let clientId = null;
   const sharedSecrets = new Map();
   let publicKey = null;
@@ -241,4 +241,3 @@
     if (e.key === 'Enter') sendButton.click();
   });
 })();
-// by Aadarsh Keshri222
