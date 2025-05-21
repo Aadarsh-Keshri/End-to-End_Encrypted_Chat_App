@@ -3,149 +3,188 @@ End-to-End Encrypted Real-Time Chat Application - Testing the Project
 
 Overview
 --------
-This guide tests the End-to-End Encrypted Real-Time Chat Application’s functionality, security, and UI. It uses ECDH (P-256), AES-256-CBC, and HMAC-SHA256 for secure messaging with a WhatsApp-inspired interface (teal header, green/white bubbles, timestamps). Tests verify encryption, messaging, error handling, and responsiveness.
+This guide tests the End-to-End Encrypted Real-Time Chat Application’s functionality, security, UI, and multi-host communication. It uses ECDH (P-256), AES-256-CBC, and HMAC-SHA256 for secure messaging with a WhatsApp-inspired interface (teal header, green/white bubbles, timestamps). Tests verify encryption, messaging, error handling, responsiveness, and connectivity across devices on the same network (e.g., https://10.10.11.113:3000) or locally (https://localhost:3000).
 
 Prerequisites
 -------------
-- Running Server: Follow Running_the_Project.txt to start the server with `node server.js`.
-- Browser: Firefox or Chrome, with self-signed certificate accepted at https://localhost:3000.
+- Running Server: Follow Running_the_Project.txt to start the server with `node server.js` in D:\CNS_Assignment\chat-app.
+- Browser: Firefox or Chrome, with self-signed certificate accepted at https://localhost:3000 or https://10.10.11.113:3000.
 - DevTools: Open with F12 to inspect WebSocket messages (Network > WS) and console logs (Console).
 - Tools: Text editor (e.g., VS Code) to modify client.js for testing, access to server console for logs.
+- Network: For multi-host testing, ensure devices are on the same Wi-Fi network, server IP (e.g., 10.10.11.113) is accessible, and port 3000 is open (e.g., `netsh advfirewall firewall add rule name="Node 3000" dir=in action=allow protocol=TCP localport=3000`).
 
 Test Scenarios
 --------------
 1. Client Connection
-   - Open two browser tabs at https://localhost:3000.
-   - Verify:
-     - Each tab displays a unique Client ID in the header (e.g., 30efc335-1c2e-4ed7-96bc-c2bc5237caa8, 92n74gzf9ge).
-     - Header shows "End-to-End Encrypted Real-Time Chat Application" with teal background (#075E54).
-   - Expected: Unique Client IDs, teal header, light gray chat area (#ECE5DD).
+   - Local Testing:
+     - Open two browser tabs on the server device at https://localhost:3000.
+     - Accept self-signed certificate warnings (Firefox: "Advanced" > "Accept the Risk"; Chrome: "Advanced" > "Proceed").
+     - Verify:
+       - Each tab displays a unique Client ID in the header (e.g., 30efc335-1c2e-4ed7-96bc-c2bc5237caa8, 92n74gzf9ge).
+       - Header shows "End-to-End Encrypted Real-Time Chat Application" with teal background (#075E54).
+   - Multi-Host Testing:
+     - On the server device, open https://10.10.11.113:3000.
+     - On another device (e.g., phone, laptop) on the same network, open https://10.10.11.113:3000.
+     - Accept certificate warnings.
+     - Verify:
+       - Each device displays a unique Client ID.
+       - Server console logs connections (e.g., "New client connected: <ClientID>" in server/websocket.js).
+   - Expected: Unique Client IDs, teal header, light gray chat area (#ECE5DD) across local and multi-host connections.
 
 2. Recipient Selection
-   - In Tab 1 (Client A): Check dropdown (#clients) lists Client B’s ID (e.g., 92n74gzf9ge).
-   - In Tab 2 (Client B): Check dropdown lists Client A’s ID.
-   - Select Client B in Tab 1 and Client A in Tab 2.
-   - Expected: Dropdowns exclude own Client ID and correctly list other connected clients.
+   - Local Testing:
+     - In Tab 1 (Client A): Check dropdown (#clients) lists Client B’s ID (e.g., 92n74gzf9ge).
+     - In Tab 2 (Client B): Check dropdown lists Client A’s ID.
+   - Multi-Host Testing:
+     - On Device 1 (Client A): Check dropdown lists Client B’s ID from Device 2.
+     - On Device 2 (Client B): Check dropdown lists Client A’s ID.
+     - Select Client B on Device 1 and Client A on Device 2.
+   - Expected: Dropdowns exclude own Client ID, list other connected clients (local and multi-host).
 
 3. Send and Receive Messages
-   - In Tab 1:
-     - Select Client B in dropdown, type "Hello" in input (#message), click send button (#send, paper plane icon) or press Enter.
-   - Verify:
-     - Tab 1: Shows green, right-aligned message: "<strong>To 92n74gzf9ge:</strong> Hello" with timestamp (e.g., "12:57 PM").
-     - Tab 2: Shows white, left-aligned message: "<strong>30efc335-...:</strong> Hello" with timestamp.
-   - Expected: Messages delivered instantly, styled correctly, chat area auto-scrolls to latest message.
+   - Local Testing:
+     - In Tab 1:
+       - Select Client B, type "Hello" in input (#message), click send (#send, paper plane icon) or press Enter.
+     - Verify:
+       - Tab 1: Green, right-aligned message: "<strong>To 92n74gzf9ge:</strong> Hello" with timestamp (e.g., "12:57 PM").
+       - Tab 2: White, left-aligned message: "<strong>30efc335-...:</strong> Hello" with timestamp.
+   - Multi-Host Testing:
+     - On Device 1 (Client A):
+       - Select Client B (Device 2), type "Test across devices", send.
+     - Verify:
+       - Device 1: Green message: "<strong>To <ClientB_ID>:</strong> Test across devices" with timestamp.
+       - Device 2: White message: "<strong><ClientA_ID>:</strong> Test across devices" with timestamp.
+   - Expected: Messages delivered instantly, styled correctly, chat area auto-scrolls.
 
 4. UI Verification
-   - Check UI elements:
-     - Header: Teal (#075E54), displays correct title.
+   - Check UI elements (local and multi-host):
+     - Header: Teal (#075E54), correct title.
      - Chat Area: Light gray (#ECE5DD), sent messages green (#DCF8C6), received messages white (#FFFFFF).
      - Input Area: Bottom bar (#F0F0F0), styled dropdown, rounded input (#message), teal send button.
-     - Timestamps: Small, gray, right-aligned in message bubbles.
-   - Resize window to 600px using DevTools (Responsive Design Mode).
+     - Timestamps: Small, gray, right-aligned.
+   - Resize window to 600px (DevTools > Responsive Design Mode) on both devices.
    - Expected: Responsive layout with smaller fonts and tighter margins.
 
 5. Security Testing
-   - Purpose: Verify end-to-end encryption, key exchange, message integrity, and TLS security to ensure confidentiality, authenticity, and robustness.
-   - Tools: DevTools (Network > WS for WebSocket messages, Security for TLS), text editor to modify client.js, server console for logs.
+   - Purpose: Verify end-to-end encryption, key exchange, message integrity, and TLS security across local and multi-host connections.
+   - Tools: DevTools (Network > WS, Security), text editor for client.js, server console.
 
    a. ECDH Key Exchange
-      - Open two tabs (Client A, Client B).
-      - In DevTools (Network > WS), inspect WebSocket messages after connection.
+      - Open Client A (local) and Client B (multi-host, e.g., phone at https://10.10.11.113:3000).
+      - In DevTools (Network > WS), inspect WebSocket messages.
       - Verify:
-        - Client A sends message: { type: 'publicKey', from: "<ClientA_ID>", publicKey: <byte_array> } (~client.js:45).
-        - Client B receives it, and Client A receives Client B’s publicKey (~server/messages.js:13).
-        - Server console logs: "Storing and broadcasting public key from: <ClientA_ID>" (~server/messages.js:13).
+        - Client A sends: { type: 'publicKey', from: "<ClientA_ID>", publicKey: <byte_array> } (~client.js:60).
+        - Client B receives it, Client A receives Client B’s key (~server/messages.js:13).
+        - Server logs: "Storing and broadcasting public key from: <ClientA_ID>" (~server/messages.js:13).
       - Test Malformed Key:
-        - Edit client.js (~line 45) to send a truncated publicKey (e.g., first 10 bytes of the key).
-        - Restart Tab 1, send message to Client B.
-        - Expected: Client B displays an error in red, e.g., "<div class='error'>Error: Invalid key format</div>" (~client.js:65, exact message depends on client.js).
+        - Edit client.js (~line 60) to send truncated publicKey (first 10 bytes).
+        - Restart Client A, send message to Client B.
+        - Expected: Client B shows red error: "<div class='error'>Error: Invalid public key...</div>" (~client.js:124).
       - Test Key Exchange Completion:
-        - Send a message from Client A to B after key exchange.
-        - Verify: Message is encrypted (see below), indicating shared secret was derived (~client.js:75).
-      - Expected: Public keys exchanged correctly, malformed keys rejected, shared secrets established.
+        - Send message from Client A to B after key exchange.
+        - Expected: Message encrypted, shared secret derived (~client.js:80-130).
+      - Expected: Keys exchanged, malformed keys rejected, secrets established.
 
    b. AES-256-CBC Encryption/Decryption
-      - Send message "Test" from Client A to Client B.
-      - In DevTools (Network > WS), inspect the WebSocket message:
-        - Format: { type: 'encryptedMessage', from: "<ClientA_ID>", to: "<ClientB_ID>", iv: <16-byte_array>, ciphertext: <byte_array>, hmac: <32-byte_array> } (~client.js:147).
-        - Verify: No plaintext ("Test") appears in WebSocket traffic.
+      - Send "Test" from Client A (local) to Client B (multi-host).
+      - In DevTools (Network > WS):
+        - Format: { type: 'encryptedMessage', from: "<ClientA_ID>", to: "<ClientB_ID>", iv: <16-byte_array>, ciphertext: <byte_array>, hmac: <32-byte_array> } (~client.js:243).
+        - Verify: No plaintext in traffic.
       - Test IV Uniqueness:
         - Send three messages from Client A to B.
-        - Compare iv values in WebSocket messages (DevTools > Network > WS).
-        - Expected: Each iv is unique, generated by crypto.getRandomValues (~client.js:147).
+        - Check iv values (DevTools > Network > WS).
+        - Expected: Unique ivs (~client.js:229).
       - Test Decryption Failure:
-        - Edit client.js (~line 147) to corrupt ciphertext (e.g., replace first byte with 0x00).
-        - Send message from Client A to B.
-        - Expected: Client B displays an error in red, e.g., "<div class='error'>Error: Decryption failed</div>" (~client.js:108, exact message depends on client.js).
-      - Expected: Messages encrypted securely, plaintext not exposed, unique IVs, decryption errors handled.
+        - Edit client.js (~line 243) to corrupt ciphertext (first byte to 0x00).
+        - Send message.
+        - Expected: Client B shows red error: "<div class='error'>Error: Failed to process message...</div>" (~client.js:182).
+      - Expected: Messages encrypted, no plaintext, unique IVs, errors handled.
 
    c. HMAC-SHA256 Verification
-      - Send message "Test" from Client A to Client B.
-      - In DevTools (Network > WS), verify encryptedMessage includes hmac field (32-byte array) (~client.js:147).
+      - Send "Test" from Client A to Client B.
+      - Verify hmac field (32-byte array) in WebSocket message (~client.js:243).
       - Test HMAC Tampering:
-        - Edit client.js (~line 147) to replace hmac with a random 32-byte array.
-        - Send message from Client A to B.
-        - Expected: Client B displays an error in red: "<div class='error'>Error: HMAC verification failed</div>" (~client.js:108).
+        - Edit client.js (~line 243) to use random 32-byte hmac.
+        - Send message.
+        - Expected: Client B shows red error: "<div class='error'>Error: HMAC verification failed</div>" (~client.js:174).
       - Test Timing-Safe Comparison:
-        - Edit client.js (~line 108) to replace crypto.subtle.timingSafeEqual with a regular comparison (e.g., hmac1 == hmac2).
-        - Send a valid message from Client A to B.
-        - Add console.time('hmac') and console.timeEnd('hmac') around the comparison in client.js.
-        - Compare timing with original timingSafeEqual (restore client.js, repeat).
-        - Expected: Regular comparison shows variable timing (vulnerable to side-channel attacks), timingSafeEqual shows constant timing.
-      - Expected: HMAC ensures integrity and authenticity, tampering detected, timing-safe verification prevents side-channel attacks.
+        - Edit client.js (~line 13) to replace timingSafeEqual with regular comparison (e.g., hmac1 == hmac2).
+        - Add console.time('hmac') and console.timeEnd('hmac') around comparison.
+        - Compare timing with original (~client.js:13).
+        - Expected: Regular comparison varies, timingSafeEqual is constant.
+      - Expected: HMAC ensures integrity, tampering detected, timing-safe prevents side-channel attacks.
 
    d. Missing Shared Secret
-      - Open a new tab (Client C).
-      - Immediately send a message to Client A before key exchange completes.
-      - Expected: Client C displays an error in red: "<div class='error'>No shared secret with <ClientA_ID></div>" (~client.js:108).
-      - Verify: Server does not forward the message (~server/messages.js:33).
+      - Open Client C (new device, https://10.10.11.113:3000).
+      - Send message to Client A before key exchange.
+      - Expected: Client C shows red error: "<div class='error'>No shared secret with <ClientA_ID></div>" (~client.js:162).
+      - Verify: Server does not forward message (~server/messages.js:33).
 
    e. TLS Certificate Validation
-      - Access https://localhost:3000 in Chrome or Firefox.
-      - Verify: Browser shows a certificate warning due to self-signed certificate (~server.js:7).
-      - In DevTools (Security tab), check certificate details:
-        - Issued to: "localhost", valid for 365 days.
+      - Access https://10.10.11.113:3000 or https://localhost:3000.
+      - Verify: Browser shows certificate warning (self-signed, ~server.js:19).
+      - In DevTools (Security):
+        - Issued to: "10.10.11.113" or "localhost", valid for 365 days.
       - Test Invalid Certificate:
-        - Replace cert.pem with an expired or invalid certificate (e.g., generate with `openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days -1` for expired).
-        - Restart server (`node server.js`).
-        - Access https://localhost:3000.
-        - Expected: Browser rejects connection or shows an enhanced warning (e.g., "NET::ERR_CERT_DATE_INVALID").
-      - Expected: TLS secures WebSocket communication, invalid certificates are rejected by the browser.
+        - Replace cert.pem with expired certificate (e.g., `openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days -1`).
+        - Restart server.
+        - Expected: Browser rejects connection (e.g., "NET::ERR_CERT_DATE_INVALID").
+      - Expected: TLS secures communication, invalid certificates rejected.
 
    f. Tampered Message Handling
-      - Edit client.js (~line 147) to send an encryptedMessage missing the iv field (e.g., set iv: null).
-      - Send message from Client A to B.
-      - Expected: Client B displays an error in red, e.g., "<div class='error'>Error: Invalid message format</div>", or server rejects the message (~server/messages.js:33).
+      - Edit client.js (~line 243) to send encryptedMessage with iv: null.
+      - Send message.
+      - Expected: Client B shows red error: "<div class='error'>Error: Failed to process message...</div>" (~client.js:182).
       - Test Invalid Recipient:
-        - Edit client.js (~line 147) to send encryptedMessage to a non-existent UUID (e.g., "00000000-0000-0000-0000-000000000000").
-        - Send message from Client A.
-        - Expected: Client A receives an error in red: "<div class='error'>Recipient <UUID> not found or not connected</div>" (~server/messages.js:36).
-      - Expected: Malformed or invalid messages are rejected, ensuring robust message handling.
-
-   - Expected Outcome: ECDH key exchange establishes secure shared secrets, AES-256-CBC ensures message confidentiality, HMAC-SHA256 verifies integrity and authenticity, TLS secures transport, and error handling prevents processing of invalid or tampered messages.
+        - Edit client.js (~line 243) to send to "00000000-0000-0000-0000-000000000000".
+        - Expected: Client A receives red error: "<div class='error'>Error from server: Recipient not found...</div>" (~server/messages.js:36).
+      - Expected: Malformed/invalid messages rejected.
 
 6. Error Handling
    - Test No Shared Secret:
-     - Send a message immediately after opening a new tab, before key exchange.
-     - Expected: Error displayed in red: "<div class='error'>No shared secret with <ClientID></div>" (~client.js:108).
+     - Send message from new tab before key exchange.
+     - Expected: Red error: "<div class='error'>No shared secret with <ClientID></div>" (~client.js:162).
    - Test Key Exchange Timeout:
-     - Open Tab 2, disconnect it (close tab) during key exchange, then send a message from Tab 1.
-     - Expected: Error displayed in red: "<div class='error'>Key exchange timed out</div>" (~client.js:108, exact message depends on client.js).
+     - Open Client B, disconnect during key exchange, send from Client A.
+     - Expected: Red error: "<div class='error'>Key exchange timed out</div>" (~client.js:211).
    - Test Invalid Recipient:
-     - Edit client.js to send an encryptedMessage to an unknown UUID (~line 147).
-     - Expected: Error displayed in red: "<div class='error'>Recipient <UUID> not found or not connected</div>" (~server/messages.js:36).
+     - Edit client.js (~line 243) to send to unknown UUID.
+     - Expected: Red error: "<div class='error'>Error from server: Recipient not found...</div>" (~server/messages.js:36).
    - Test Invalid Message Type:
-     - Edit client.js to send a message with { type: 'invalid' } (~line 147).
-     - Expected: Error displayed in red: "<div class='error'>Unknown message type: invalid</div>" (~server/websocket.js:33).
+     - Edit client.js (~line 243) to send { type: 'invalid' }.
+     - Expected: Red error: "<div class='error'>Error from server: Invalid message type...</div>" (~server/websocket.js:33).
    - Test WebSocket Disconnection:
-     - Stop the server (Ctrl+C), then refresh Tab 1.
-     - Expected: Error displayed in red: "<div class='error'>Disconnected from server</div>" (~client.js:27).
-   - Expected: All errors are displayed in red, centered in the chat area.
+     - Stop server (Ctrl+C), refresh Client A.
+     - Expected: Red error: "<div class='error'>Disconnected from server</div>" (~client.js:195).
+   - Expected: Errors displayed in red, centered.
 
 7. Multiple Clients
-   - Open three tabs (Clients A, B, C).
+   - Open Client A (local, https://localhost:3000), Client B (Device 1, https://10.10.11.113:3000), Client C (Device 2, https://10.10.11.113:3000).
    - From Client A, send messages to Client B and Client C.
    - Verify:
-     - Messages appear with correct recipient IDs in sent bubbles (e.g., "<strong>To <ClientB_ID>:</strong>").
-     - No messages are delivered to unintended clients (no cross-talk).
-   - Expected: Messages are correctly routed to selected recipients.
+     - Messages show correct recipient IDs in sent bubbles.
+     - No cross-talk (unintended delivery).
+   - Expected: Messages routed correctly across local and multi-host clients.
+
+8. Multi-Host Communication
+   - Setup:
+     - Start server on a device with IP 10.10.11.113 (`node server.js`).
+     - Ensure port 3000 is open (`netsh advfirewall firewall add rule name="Node 3000" dir=in action=allow protocol=TCP localport=3000`).
+     - Connect three devices on the same network (e.g., laptop, phone, tablet) to https://10.10.11.113:3000.
+     - Accept certificate warnings.
+   - Test Connection:
+     - Verify each device displays a unique Client ID.
+     - Check server console logs: "New client connected: <ClientID>" (~server/websocket.js).
+   - Test Messaging:
+     - On Device 1 (Client A), select Client B (Device 2), send "Hello from laptop".
+     - On Device 2 (Client B), select Client C (Device 3), send "Hi from phone".
+     - Verify:
+       - Device 2 shows: "<strong><ClientA_ID>:</strong> Hello from laptop" (white, left-aligned).
+       - Device 3 shows: "<strong><ClientB_ID>:</strong> Hi from phone" (white, left-aligned).
+       - Device 1 shows: "<strong>To <ClientB_ID>:</strong> Hello from laptop" (green, right-aligned).
+   - Test Disconnection:
+     - Disconnect Device 2 (close browser).
+     - Verify:
+       - Device 1 and Device 3 dropdowns update, removing Client B’s ID.
+       - Server logs: "Client disconnected: <ClientB_ID>" (~server/websocket.js:48).
+   - Expected: Clients connect across devices, messages are encrypted and delivered correctly, disconnections handled.

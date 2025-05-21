@@ -16,7 +16,7 @@ Key Functionalities
    - Clients exchange public keys via WebSocket for secure key agreement.
 
 2. Real-Time Communication
-   - WebSocket (wss://localhost:3000) delivers messages instantly.
+   - WebSocket (wss://localhost:3000 or wss://10.10.11.113:3000) delivers messages instantly across local and multi-host (networked devices) connections.
    - Messages appear in a scrollable chat area with auto-scrolling to the latest message.
 
 3. User Interface
@@ -46,7 +46,7 @@ The project includes client-side and server-side components:
        - Responsive media query (max-width: 600px).
        - Timestamps (.timestamp), errors (.error) styled.
    - client.js
-     - WebSocket: Connects to wss://localhost:3000, handles clientId, clientList, publicKey, encryptedMessage, error, success.
+     - WebSocket: Connects to wss://10.10.11.113:3000 (multi-host) or wss://localhost:3000 (local), handles clientId, clientList, publicKey, encryptedMessage, error, success (~client.js:3).
      - Cryptography: Implements ECDH key exchange, AES-256-CBC encryption, HMAC-SHA256 verification (see Cryptography_Documentation.txt).
      - DOM: Shows client ID (#clientId), populates dropdown (#clients), appends messages to #chat (<div class="message sent/received"> with timestamps), shows errors (<div class="error">).
      - Events: Send button (#send) and Enter key send messages.
@@ -115,7 +115,8 @@ Program Logic
 
 Limitations
 -----------
-- Self-signed certificates risk MITM attacks.
+- Self-signed certificates risk MITM attacks, with browser warnings on multi-host connections (e.g., https://10.10.11.113:3000).
 - No client authentication allows unauthorized joins.
 - Temporary UUIDs lack persistent identity.
 - Messages not stored, lost on refresh.
+- Multi-host requires network setup (e.g., open port 3000, firewall rules).
